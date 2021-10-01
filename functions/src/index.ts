@@ -12,14 +12,14 @@ admin.initializeApp(functions.config().firebase);
 
 
 exports.updateValidation = functions.firestore
-    .document('validation/{validationId}')
+    .document('validacoes/{validationId}')
     .onUpdate((change, context) => {
         const newValue = change.after.data();
         console.log("new update in Validation");
         console.log(newValue);
 
         if (newValue.alocar) {
-            allocByValidation(newValue.id);
+            return allocByValidation(context.params.validationId);
         }
     });
 
@@ -31,7 +31,7 @@ exports.updateOptimisation = functions.firestore
         console.log(newValue);
 
         if (newValue.alocar) {
-            allocByOptimisation(newValue.id);
+            return allocByOptimisation(newValue.id);
         }
     });
 
@@ -46,11 +46,13 @@ export const allocPatients = functions.https.onRequest((request, response) => {
 
     functions.logger.info("Alocar pacientes", { structuredData: true });
     if (request.body.type == "validation") {
-        allocByValidation(request.body.id);
-        response.status(200).send("Alocando!");
+        return allocByValidation(request.body.id).then(() => {
+            response.status(200).send("Alocando!");
+        });
     } else if (request.body.type == "optimisation") {
-        allocByOptimisation(request.body.id);
-        response.status(200).send("Alocando!");
+        return allocByOptimisation(request.body.id).then(() => {
+            response.status(200).send("Alocando!");
+        });
     } else {
         response.status(412).send('Missing or unrecognized type');
     }
@@ -87,7 +89,7 @@ function allocByValidation(id: string) {
             let validacao = snapshot.docs[snapshot.docs.length - 1].data();
             let validacaoId = snapshot.docs[snapshot.docs.length - 1].id;
             let pacientes = snapshot.docs[snapshot.docs.length - 1].data().pacientes;
-            console.log("pacientes: ", pacientes);
+            console.log("validacao: ", validacao);
             if (validacao.concluido === true) {
                 console.log("if (validacao.concluido)");
                 return;

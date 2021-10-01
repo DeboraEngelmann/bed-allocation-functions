@@ -3,6 +3,7 @@ import {Leito} from "./leito";
 export interface Quarto {
     id?: string;
     nome?: string;
+    dist?: string;
     especialidade?: string;
     tipoDeLeito?: string;
     tipoDeEstadia?: string;
