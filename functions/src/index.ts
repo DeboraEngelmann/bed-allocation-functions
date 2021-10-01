@@ -31,7 +31,7 @@ exports.updateOptimisation = functions.firestore
         console.log(newValue);
 
         if (newValue.alocar) {
-            return allocByOptimisation(newValue.id);
+            return allocByOptimisation(context.params.optimiserResultId);
         }
     });
 
@@ -65,16 +65,24 @@ function allocByOptimisation(id: string) {
             let optimiserResultId = snapshot.docs[0].id;
             let laudos = optimiserResult.laudosData;
             let pacientes: LaudoInternacao[] = [];
-            laudos.forEach((element: LaudoInternacao) => {
-                if (element.leito) {
-                    pacientes.push(element);
-                }
-            });
-            console.log("Chamar função alocarPacientes()");
-            alocarPacientes(pacientes);
-            optimiserResult.alreadySuggested = true;
-            admin.firestore().collection('optimiserResult').doc(optimiserResultId).set(optimiserResult);
-            return;
+            console.log("OptimiserResult Id");
+            console.log(optimiserResult.id);
+
+            if (optimiserResult.concluido === true) {
+                console.log("if (optimiserResult.concluido)");
+                return;
+            } else {
+                laudos.forEach((element: LaudoInternacao) => {
+                    if (element.leito) {
+                        pacientes.push(element);
+                    }
+                });
+                console.log("Chamar função alocarPacientes()");
+                alocarPacientes(pacientes);
+                optimiserResult.concluido = true;
+                admin.firestore().collection('optimiserResult').doc(optimiserResultId).set(optimiserResult);
+                return;
+            }
         }).catch((error: any) => {
             console.log("deu erro! 03");
             console.log(error);
@@ -110,6 +118,8 @@ function allocByValidation(id: string) {
 function alocarPacientes(pacientes: LaudoInternacao[]) {
     console.log("Função alocarPacientes() Chamada");
     pacientes.forEach(laudo => {
+        console.log("prontuario == " + laudo.prontuario);
+        
         return admin.firestore().collection('prontuarios').where('prontuario', '==', laudo.prontuario).limit(1)
             .get().then(
                 (snapshot0: any) => {
